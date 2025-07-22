@@ -28,6 +28,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Log para debug de requests
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+        console.log('🔍 Request Debug:', {
+            method: req.method,
+            path: req.path,
+            headers: req.headers['content-type'],
+            body: req.body
+        });
+    }
+    next();
+});
+
 // Crear servidor HTTP
 const server = http.createServer(app);
 
@@ -44,6 +57,9 @@ const io = socketIo(server, {
 // Path público
 const publicPath = path.resolve(__dirname, 'public');
 app.use(express.static(publicPath));
+
+// Rutas de API
+app.use('/api/auth', require('./routes/auth'));
 
 // Importar lógica de sockets (actualizada para v4)
 require('./sockets/socket')(io);

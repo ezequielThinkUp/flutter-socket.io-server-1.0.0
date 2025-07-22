@@ -2,14 +2,12 @@ const mongoose = require('mongoose');
 
 const dbConnection = async () => {
     try {
-        const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/flutter_socket_db';
+        const mongoURI = process.env.DB_CNN || 'mongodb://localhost:27017/flutter_socket_db';
 
-        await mongoose.connect(mongoURI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        await mongoose.connect(mongoURI);
 
         console.log('✅ MongoDB connected successfully');
+        console.log('🔗 Database URI:', mongoURI.replace(/mongodb:\/\/.*@/, 'mongodb://***:***@'));
     } catch (error) {
         console.error('❌ MongoDB connection error:', error.message);
         process.exit(1);
@@ -19,18 +17,13 @@ const dbConnection = async () => {
 // MongoDB configuration options
 const mongoConfig = {
     development: {
-        uri: process.env.MONGO_URI || 'mongodb://localhost:27017/flutter_socket_dev',
-        options: {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        }
+        uri: process.env.DB_CNN || 'mongodb://localhost:27017/flutter_socket_dev',
+        options: {}
     },
 
     production: {
-        uri: process.env.MONGO_URI,
+        uri: process.env.DB_CNN,
         options: {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             maxPoolSize: 10,
             serverSelectionTimeoutMS: 5000,
             socketTimeoutMS: 45000,
@@ -38,11 +31,8 @@ const mongoConfig = {
     },
 
     test: {
-        uri: process.env.MONGO_URI_TEST || 'mongodb://localhost:27017/flutter_socket_test',
-        options: {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        }
+        uri: process.env.DB_CNN_TEST || 'mongodb://localhost:27017/flutter_socket_test',
+        options: {}
     }
 };
 
