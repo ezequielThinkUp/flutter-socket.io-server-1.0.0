@@ -1,8 +1,9 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const { body, check, validationResult } = require('express-validator');
 const { validarCampos, validarEmail, validarPasswordBasico } = require('../middlewares/validar-campos');
+
+// Importar controladores
+const { crearUsuario } = require('../controllers/auth');
 
 const router = express.Router();
 
@@ -15,56 +16,7 @@ router.post('/register', [
     ...validarEmail,
     ...validarPasswordBasico,
     validarCampos
-], async (req, res) => {
-    try {
-        console.log('📝 Datos recibidos en el body:', req.body);
-        console.log('📝 Headers:', req.headers['content-type']);
-
-        const { name, email, password } = req.body;
-        console.log('📋 Datos extraídos:', { name, email, password: password ? '***' : 'undefined' });
-
-        // TODO: Verificar si el usuario ya existe
-        // TODO: Crear el usuario en la base de datos
-
-        // Encriptar contraseña
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // TODO: Guardar usuario en MongoDB
-
-        // Generar JWT
-        const payload = {
-            user: {
-                id: 'temp_id', // TODO: Usar ID real del usuario
-                name,
-                email
-            }
-        };
-
-        const token = jwt.sign(
-            payload,
-            process.env.JWT_SECRET || 'fallback_secret',
-            { expiresIn: '30d' }
-        );
-
-        res.status(201).json({
-            ok: true,
-            msg: 'Usuario registrado exitosamente',
-            token,
-            user: {
-                name,
-                email
-            }
-        });
-
-    } catch (error) {
-        console.error('Error en registro:', error);
-        res.status(500).json({
-            ok: false,
-            msg: 'Error interno del servidor'
-        });
-    }
-});
+], crearUsuario);
 
 // @route   POST /api/auth/login
 // @desc    Autenticar usuario y obtener token
