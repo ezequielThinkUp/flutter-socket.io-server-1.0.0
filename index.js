@@ -6,8 +6,14 @@ const helmet = require('helmet');
 const path = require('path');
 require('dotenv').config();
 
+// Importar configuración de base de datos
+const { dbConnection } = require('./database/config');
+
 // App Express con seguridad
 const app = express();
+
+// Conectar a la base de datos
+dbConnection();
 
 // Middlewares de seguridad
 app.use(helmet({
