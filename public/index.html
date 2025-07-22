@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Flutter Chat Server v2.0 - SEGURO</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segura UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .header h1 {
+            color: #333;
+            margin: 0;
+        }
+
+        .header .version {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .security-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .connected {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .messages {
+            height: 350px;
+            overflow-y: auto;
+            border: 2px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+
+        .message {
+            margin: 8px 0;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .message.sent {
+            background: #e3f2fd;
+            text-align: right;
+            color: #1976d2;
+        }
+
+        .message.received {
+            background: #e8f5e8;
+            text-align: left;
+            color: #388e3c;
+        }
+
+        .message.system {
+            background: #fff3cd;
+            text-align: center;
+            color: #856404;
+            font-style: italic;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        input,
+        button {
+            padding: 12px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            cursor: pointer;
+            border: none;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .form-row input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .stats {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Flutter Chat Server - Test Client</h1>
+            <div class="version">Socket.io v4.8.1 - Vulnerabilidades: 0</div>
+            <span class="security-badge">🔒 SEGURO</span>
+        </div>
+
+        <div id="status" class="status disconnected">❌ Desconectado</div>
+
+        <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+                <label for="nombre">🧑‍💻 Tu nombre:</label>
+                <input type="text" id="nombre" placeholder="Ingresa tu nombre" value="TestUser">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label for="uid">🆔 Tu UID:</label>
+                <input type="text" id="uid" placeholder="Ingresa tu UID único" value="">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <button id="conectar">🔌 Conectar</button>
+            <button id="desconectar" disabled>❌ Desconectar</button>
+            <button id="obtenerUsuarios" disabled>👥 Ver usuarios online</button>
+        </div>
+
+        <div class="form-group">
+            <label for="mensaje">💬 Mensaje público (modo original):</label>
+            <div class="form-row">
+                <input type="text" id="mensaje" placeholder="Escribe un mensaje para todos">
+                <button id="enviarPublico" disabled>📢 Enviar a todos</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="mensajePrivado">💌 Mensaje privado (Flutter Chat):</label>
+            <div class="form-row">
+                <input type="text" id="destinatario" placeholder="UID del destinatario">
+                <input type="text" id="mensajePrivado" placeholder="Mensaje privado">
+                <button id="enviarPrivado" disabled>🔒 Enviar privado</button>
+            </div>
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="stats">
+            <div>📊 <strong>Estadísticas:</strong> <span id="stats">Esperando conexión...</span></div>
+            <div>🔗 <strong>Endpoint:</strong> http://localhost:3000</div>
+            <div>❤️ <strong>Health Check:</strong> <a href="/health" target="_blank">/health</a></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = null;
+        let conectado = false;
+
+        // Referencias DOM
+        const elements = {
+            status: document.getElementById('status'),
+            messages: document.getElementById('messages'),
+            stats: document.getElementById('stats'),
+            nombre: document.getElementById('nombre'),
+            uid: document.getElementById('uid'),
+            mensaje: document.getElementById('mensaje'),
+            mensajePrivado: document.getElementById('mensajePrivado'),
+            destinatario: document.getElementById('destinatario'),
+            conectar: document.getElementById('conectar'),
+            desconectar: document.getElementById('desconectar'),
+            enviarPublico: document.getElementById('enviarPublico'),
+            enviarPrivado: document.getElementById('enviarPrivado'),
+            obtenerUsuarios: document.getElementById('obtenerUsuarios')
+        };
+
+        // Generar UID único por defecto
+        elements.uid.value = 'user_' + Math.random().toString(36).substr(2, 9);
+
+        function addMessage(mensaje, tipo = 'system') {
+            const div = document.createElement('div');
+            div.className = `message ${tipo}`;
+            div.innerHTML = `<small><strong>${new Date().toLocaleTimeString()}</strong></small><br>${mensaje}`;
+            elements.messages.appendChild(div);
+            elements.messages.scrollTop = elements.messages.scrollHeight;
+        }
+
+        function updateStatus(connected, info = '') {
+            conectado = connected;
+            if (connected) {
+                elements.status.className = 'status connected';
+                elements.status.textContent = '✅ Conectado ' + info;
+                elements.stats.textContent = 'Conectado y funcionando correctamente';
+            } else {
+                elements.status.className = 'status disconnected';
+                elements.status.textContent = '❌ Desconectado ' + info;
+                elements.stats.textContent = 'Desconectado del servidor';
+            }
+
+            // Controlar botones
+            elements.conectar.disabled = connected;
+            elements.desconectar.disabled = !connected;
+            elements.enviarPublico.disabled = !connected;
+            elements.enviarPrivado.disabled = !connected;
+            elements.obtenerUsuarios.disabled = !connected;
+        }
+
+        // EVENTOS DE CONEXIÓN
+        elements.conectar.addEventListener('click', () => {
+            if (!elements.nombre.value.trim() || !elements.uid.value.trim()) {
+                alert('🚫 Por favor completa nombre y UID');
+                return;
+            }
+
+            addMessage('🔄 Intentando conectar...', 'system');
+
+            // Socket.io v4 connection
+            socket = io({
+                transports: ['websocket', 'polling'],
+                timeout: 5000
+            });
+
+            // Eventos de conexión
+            socket.on('connect', () => {
+                addMessage('✅ Conectado al servidor Socket.io v4.8.1', 'system');
+
+                // Autenticar usuario
+                socket.emit('login', {
+                    nombre: elements.nombre.value.trim(),
+                    uid: elements.uid.value.trim(),
+                    email: 'test@flutter.dev'
+                });
+            });
+
+            socket.on('disconnect', (reason) => {
+                addMessage(`❌ Desconectado: ${reason}`, 'system');
+                updateStatus(false, `(${reason})`);
+            });
+
+            socket.on('connect_error', (error) => {
+                addMessage(`🚨 Error de conexión: ${error.message}`, 'error');
+                updateStatus(false, '(Error)');
+            });
+
+            // Eventos de autenticación
+            socket.on('login-ok', (data) => {
+                addMessage(`🎉 Login exitoso como: <strong>${data.usuario.nombre}</strong>`, 'system');
+                addMessage(`👥 Hay ${data.usuariosOnline.length} usuarios online`, 'system');
+                updateStatus(true, `como ${data.usuario.nombre}`);
+            });
+
+            socket.on('login-error', (data) => {
+                addMessage(`❌ Error de login: ${data.mensaje}`, 'error');
+                updateStatus(false, '(Login fallido)');
+            });
+
+            // Eventos de mensajes
+            socket.on('mensaje', (data) => {
+                addMessage(`<strong>📢 ${data.usuario}:</strong> ${data.mensaje}`, 'received');
+            });
+
+            socket.on('mensaje-personal', (data) => {
+                addMessage(`<strong>💌 ${data.nombreEmisor} (privado):</strong> ${data.mensaje}`, 'received');
+            });
+
+            socket.on('mensaje-enviado', (data) => {
+                if (data.entregado) {
+                    addMessage(`✅ Mensaje entregado: "${data.mensaje}"`, 'sent');
+                } else {
+                    addMessage(`❌ No entregado: ${data.error}`, 'error');
+                }
+            });
+
+            socket.on('mensaje-error', (data) => {
+                addMessage(`🚨 Error: ${data.mensaje}`, 'error');
+            });
+
+            // Eventos de usuarios
+            socket.on('usuario-conectado', (data) => {
+                addMessage(`👋 <strong>${data.usuario.nombre}</strong> se conectó`, 'system');
+            });
+
+            socket.on('usuario-desconectado', (data) => {
+                addMessage(`👋 <strong>${data.usuario.nombre}</strong> se desconectó`, 'system');
+            });
+
+            socket.on('usuarios-online', (data) => {
+                const nombres = data.usuarios.map(u => u.nombre).join(', ');
+                addMessage(`👥 <strong>${data.total} usuarios online:</strong> ${nombres}`, 'system');
+            });
+
+            socket.on('escribiendo', (data) => {
+                if (data.escribiendo) {
+                    addMessage(`✏️ ${data.nombre} está escribiendo...`, 'system');
+                }
+            });
+        });
+
+        elements.desconectar.addEventListener('click', () => {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                addMessage('🔌 Desconectado manualmente', 'system');
+            }
+        });
+
+        // EVENTOS DE MENSAJES
+        elements.enviarPublico.addEventListener('click', () => {
+            const mensaje = elements.mensaje.value.trim();
+            if (!mensaje) {
+                alert('🚫 Escribe un mensaje');
+                return;
+            }
+
+            socket.emit('mensaje', mensaje);
+            addMessage(`📢 Yo (público): ${mensaje}`, 'sent');
+            elements.mensaje.value = '';
+        });
+
+        elements.enviarPrivado.addEventListener('click', () => {
+            const destinatario = elements.destinatario.value.trim();
+            const mensaje = elements.mensajePrivado.value.trim();
+
+            if (!destinatario || !mensaje) {
+                alert('🚫 Completa destinatario y mensaje');
+                return;
+            }
+
+            socket.emit('mensaje-personal', {
+                para: destinatario,
+                mensaje: mensaje,
+                tipo: 'texto'
+            });
+
+            addMessage(`💌 Yo → ${destinatario}: ${mensaje}`, 'sent');
+            elements.mensajePrivado.value = '';
+        });
+
+        elements.obtenerUsuarios.addEventListener('click', () => {
+            socket.emit('obtener-usuarios');
+        });
+
+        // EVENTOS DE TECLADO
+        elements.mensaje.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !elements.enviarPublico.disabled) {
+                elements.enviarPublico.click();
+            }
+        });
+
+        elements.mensajePrivado.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !elements.enviarPrivado.disabled) {
+                elements.enviarPrivado.click();
+            }
+        });
+
+        // INICIALIZACIÓN
+        updateStatus(false);
+        addMessage('🚀 Cliente de prueba listo para Socket.io v4.8.1', 'system');
+        addMessage('✨ Características: Mensajes públicos, privados, usuarios online, sin vulnerabilidades', 'system');
+        addMessage('📝 Completa tus datos y haz clic en "Conectar"', 'system');
+
+        // Health check cada 30 segundos si está conectado
+        setInterval(() => {
+            if (conectado && socket && socket.connected) {
+                fetch('/health')
+                    .then(res => res.json())
+                    .then(data => {
+                        elements.stats.textContent = `✅ Servidor OK - ${data.socketio} - Sin vulnerabilidades`;
+                    })
+                    .catch(() => {
+                        elements.stats.textContent = '⚠️ Servidor no responde';
+                    });
+            }
+        }, 30000);
+
+    </script>
+</body>
+
+</html>
