@@ -1,16 +1,9 @@
 const { response } = require('express');
 const bcryptjs = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const Usuario = require('../models/usuario');
 
-// Helper para generar JWT
-const generateJWT = (user) => {
-    return jwt.sign(
-        { user },
-        process.env.JWT_SECRET || 'fallback_secret',
-        { expiresIn: '30d' }
-    );
-};
+// Importar helper JWT
+const { generateJWTSync } = require('../helpers/jwt');
 
 const crearUsuario = async (req, res = response) => {
     try {
@@ -27,7 +20,7 @@ const crearUsuario = async (req, res = response) => {
             });
         }
 
-        // Encriptar password
+        // Encriptar password con bcrypt
         const salt = bcryptjs.genSaltSync(10);
         const passwordEncriptado = bcryptjs.hashSync(password, salt);
 
@@ -42,8 +35,8 @@ const crearUsuario = async (req, res = response) => {
         const usuarioGuardado = await usuario.save();
         console.log('✅ Usuario guardado en MongoDB:', usuarioGuardado._id);
 
-        // Generar token con datos reales del usuario guardado
-        const token = generateJWT({
+        // Generar token usando el helper JWT
+        const token = generateJWTSync({
             id: usuarioGuardado._id,
             name: usuarioGuardado.name,
             email: usuarioGuardado.email
@@ -74,6 +67,5 @@ const crearUsuario = async (req, res = response) => {
 };
 
 module.exports = {
-    crearUsuario,
-    generateJWT
+    crearUsuario
 };
