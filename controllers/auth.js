@@ -66,6 +66,88 @@ const crearUsuario = async (req, res = response) => {
     }
 };
 
+const loginUsuario = async (req, res = response) => {
+    try {
+        console.log('🔍 Request Debug: {');
+        console.log(`  method: '${req.method}',`);
+        console.log(`  path: '${req.path}',`);
+        console.log(`  headers: '${req.get('Content-Type')}',`);
+        console.log(`  body: ${JSON.stringify(req.body)}`);
+        console.log('}');
+
+        const { email, password } = req.body;
+
+        // Buscar usuario en la base de datos
+        const usuario = await Usuario.findOne({ email });
+        if (!usuario) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Credenciales incorrectas'
+            });
+        }
+
+        // Verificar contraseña
+        const isMatch = bcryptjs.compareSync(password, usuario.password);
+        if (!isMatch) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Credenciales incorrectas'
+            });
+        }
+
+        // Generar JWT usando el helper
+        const token = generateJWTSync({
+            id: usuario._id,
+            name: usuario.name,
+            email: usuario.email
+        });
+
+        res.json({
+            ok: true,
+            msg: 'Login exitoso',
+            token,
+            user: {
+                id: usuario._id,
+                name: usuario.name,
+                email: usuario.email
+            }
+        });
+
+    } catch (error) {
+        console.error('Error en login:', error);
+        res.status(500).json({
+            ok: false,
+            msg: 'Error interno del servidor'
+        });
+    }
+};
+
+const renovarToken = async (req, res = response) => {
+    try {
+        // El usuario ya viene validado del middleware validarJWT
+        const user = req.user;
+
+        // Generar nuevo token usando el helper
+        const newToken = generateJWTSync(user);
+
+        res.json({
+            ok: true,
+            msg: 'Token renovado exitosamente',
+            token: newToken,
+            user
+        });
+
+    } catch (error) {
+        console.error('❌ Error renovando token:', error);
+        res.status(500).json({
+            ok: false,
+            msg: 'Error interno del servidor'
+        });
+    }
+};
+
 module.exports = {
-    crearUsuario
+    crearUsuario,
+    loginUsuario,
+    renovarToken
 };
