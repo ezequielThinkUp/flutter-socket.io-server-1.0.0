@@ -1,6 +1,9 @@
 // Gestión segura de usuarios conectados
 const usuariosConectados = new Map();
 
+// Importar modelo de Usuario para actualizar base de datos
+const Usuario = require('../models/usuario');
+
 module.exports = (io) => {
 
     console.log('🔌 Socket.io v4 configurado correctamente');
@@ -10,7 +13,7 @@ module.exports = (io) => {
         console.log(`✅ Cliente conectado: ${socket.id}`);
 
         // --- AUTENTICACIÓN DE USUARIO ---
-        socket.on('login', (data) => {
+        socket.on('login', async (data) => {
             try {
                 const { nombre, uid, email } = data;
 
@@ -27,6 +30,18 @@ module.exports = (io) => {
                 if (yaConectado) {
                     socket.emit('login-error', { mensaje: 'Usuario ya conectado desde otro dispositivo' });
                     return;
+                }
+
+                // 🆕 ACTUALIZAR BASE DE DATOS - Marcar usuario como online
+                try {
+                    await Usuario.findByIdAndUpdate(uid, {
+                        online: true,
+                        lastLogin: new Date()
+                    });
+                    console.log(`📊 BD actualizada: Usuario ${nombre} marcado como online`);
+                } catch (dbError) {
+                    console.warn(`⚠️ No se pudo actualizar BD para usuario ${uid}:`, dbError.message);
+                    // Continuar sin fallar si hay error de BD
                 }
 
                 // Almacenar usuario de forma segura
@@ -175,11 +190,21 @@ module.exports = (io) => {
         });
 
         // --- DESCONEXIÓN ---
-        socket.on('disconnect', (reason) => {
+        socket.on('disconnect', async (reason) => {
             const usuario = usuariosConectados.get(socket.id);
 
             if (usuario) {
                 console.log(`❌ Usuario desconectado: ${usuario.nombre} (${reason})`);
+
+                // 🆕 ACTUALIZAR BASE DE DATOS - Marcar usuario como offline
+                try {
+                    await Usuario.findByIdAndUpdate(usuario.uid, {
+                        online: false
+                    });
+                    console.log(`📊 BD actualizada: Usuario ${usuario.nombre} marcado como offline`);
+                } catch (dbError) {
+                    console.warn(`⚠️ No se pudo actualizar BD para usuario ${usuario.uid}:`, dbError.message);
+                }
 
                 // Notificar desconexión a otros usuarios
                 socket.broadcast.emit('usuario-desconectado', { usuario });
@@ -204,12 +229,22 @@ module.exports = (io) => {
     }, 30000);
 
     // Limpieza de usuarios inactivos cada 5 minutos
-    setInterval(() => {
+    setInterval(async () => {
         const ahora = Date.now();
         const tiempoLimite = 5 * 60 * 1000; // 5 minutos
 
         for (const [socketId, usuario] of usuariosConectados) {
             if (ahora - usuario.ultimaConexion > tiempoLimite) {
+                // Marcar como offline en BD
+                try {
+                    await Usuario.findByIdAndUpdate(usuario.uid, {
+                        online: false
+                    });
+                    console.log(`🧹📊 Usuario limpiado y marcado offline en BD: ${usuario.nombre}`);
+                } catch (dbError) {
+                    console.warn(`⚠️ Error actualizando BD en limpieza:`, dbError.message);
+                }
+
                 usuariosConectados.delete(socketId);
                 console.log(`🧹 Usuario limpiado por inactividad: ${usuario.nombre}`);
             }
