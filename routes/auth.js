@@ -4,7 +4,7 @@ const { validarCampos, validarEmail, validarPasswordBasico } = require('../middl
 const { validarJWT } = require('../middlewares/validar-jwt');
 
 // Importar controladores
-const { crearUsuario, loginUsuario, renovarToken } = require('../controllers/auth');
+const { crearUsuario, loginUsuario, renovarToken, logoutUsuario } = require('../controllers/auth');
 
 const router = express.Router();
 
@@ -32,5 +32,10 @@ router.post('/login', [
 // @desc    Renovar token JWT
 // @access  Private
 router.get('/renew', validarJWT, renovarToken);
+
+// @route   POST /api/auth/logout
+// @desc    Cerrar sesión y marcar usuario como offline
+// @access  Private
+router.post('/logout', validarJWT, logoutUsuario);
 
 module.exports = router; 

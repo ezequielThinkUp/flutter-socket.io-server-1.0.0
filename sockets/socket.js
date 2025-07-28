@@ -14,6 +14,7 @@ module.exports = (io) => {
 
         // --- AUTENTICACIÓN DE USUARIO ---
         socket.on('login', async (data) => {
+            console.log('🔐 Evento login recibido:', data);
             try {
                 const { nombre, uid, email } = data;
 

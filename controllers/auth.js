@@ -95,6 +95,18 @@ const loginUsuario = async (req, res = response) => {
             });
         }
 
+        // 🆕 ACTUALIZAR BASE DE DATOS - Marcar usuario como online y actualizar lastLogin
+        try {
+            await Usuario.findByIdAndUpdate(usuario._id, {
+                online: true,
+                lastLogin: new Date()
+            });
+            console.log(`📊 BD actualizada en login: Usuario ${usuario.name} marcado como online`);
+        } catch (dbError) {
+            console.warn(`⚠️ No se pudo actualizar BD en login para usuario ${usuario._id}:`, dbError.message);
+            // Continuar sin fallar si hay error de BD
+        }
+
         // Generar JWT usando el helper
         const token = generateJWTSync({
             id: usuario._id,
@@ -146,8 +158,39 @@ const renovarToken = async (req, res = response) => {
     }
 };
 
+const logoutUsuario = async (req, res = response) => {
+    try {
+        // El usuario ya viene validado del middleware validarJWT
+        const user = req.user;
+
+        // 🆕 ACTUALIZAR BASE DE DATOS - Marcar usuario como offline
+        try {
+            await Usuario.findByIdAndUpdate(user.id, {
+                online: false
+            });
+            console.log(`📊 BD actualizada en logout: Usuario ${user.name} marcado como offline`);
+        } catch (dbError) {
+            console.warn(`⚠️ No se pudo actualizar BD en logout para usuario ${user.id}:`, dbError.message);
+            // Continuar sin fallar si hay error de BD
+        }
+
+        res.json({
+            ok: true,
+            msg: 'Logout exitoso'
+        });
+
+    } catch (error) {
+        console.error('❌ Error en logout:', error);
+        res.status(500).json({
+            ok: false,
+            msg: 'Error interno del servidor'
+        });
+    }
+};
+
 module.exports = {
     crearUsuario,
     loginUsuario,
-    renovarToken
+    renovarToken,
+    logoutUsuario
 };
