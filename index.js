@@ -60,6 +60,7 @@ app.use(express.static(publicPath));
 
 // Rutas de API
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
 
 // Importar lógica de sockets (actualizada para v4)
 require('./sockets/socket')(io);
