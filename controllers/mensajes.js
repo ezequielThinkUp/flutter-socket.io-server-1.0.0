@@ -8,7 +8,7 @@ const { response } = require('express');
 const obtenerMensajesEntreUsuarios = async (req, res = response) => {
     try {
         const { usuario1, usuario2, limite = 50, offset = 0 } = req.query;
-        const { uid } = req;
+        const { uid } = req.user;
 
         // Verificar que el usuario autenticado sea uno de los participantes
         if (uid !== usuario1 && uid !== usuario2) {
@@ -46,7 +46,7 @@ const obtenerMensajesEntreUsuarios = async (req, res = response) => {
 const enviarMensaje = async (req, res = response) => {
     try {
         const { receptor, contenido, tipo = 'texto', archivoUrl, duracion, metadatos } = req.body;
-        const { uid } = req;
+        const { uid } = req.user;
 
         // Validar que el receptor existe
         const usuarioReceptor = await Usuario.findById(receptor);
@@ -95,7 +95,7 @@ const enviarMensaje = async (req, res = response) => {
 const marcarComoLeido = async (req, res = response) => {
     try {
         const { mensajeId } = req.params;
-        const { uid } = req;
+        const { uid } = req.user;
 
         const mensaje = await Mensaje.findById(mensajeId);
 
@@ -137,7 +137,7 @@ const marcarComoLeido = async (req, res = response) => {
 const marcarComoEntregado = async (req, res = response) => {
     try {
         const { mensajeId } = req.params;
-        const { uid } = req;
+        const { uid } = req.user;
 
         const mensaje = await Mensaje.findById(mensajeId);
 
@@ -178,7 +178,7 @@ const marcarComoEntregado = async (req, res = response) => {
  */
 const obtenerMensajesNoLeidos = async (req, res = response) => {
     try {
-        const { uid } = req;
+        const { uid } = req.user;
 
         const mensajes = await Mensaje.obtenerMensajesNoLeidos(uid);
 
@@ -203,7 +203,7 @@ const obtenerMensajesNoLeidos = async (req, res = response) => {
 const eliminarMensaje = async (req, res = response) => {
     try {
         const { mensajeId } = req.params;
-        const { uid } = req;
+        const { uid } = req.user;
 
         const mensaje = await Mensaje.findById(mensajeId);
 
@@ -245,7 +245,7 @@ const agregarReaccion = async (req, res = response) => {
     try {
         const { mensajeId } = req.params;
         const { tipo } = req.body;
-        const { uid } = req;
+        const { uid } = req.user;
 
         const mensaje = await Mensaje.findById(mensajeId);
 
@@ -279,7 +279,7 @@ const agregarReaccion = async (req, res = response) => {
 const removerReaccion = async (req, res = response) => {
     try {
         const { mensajeId } = req.params;
-        const { uid } = req;
+        const { uid } = req.user;
 
         const mensaje = await Mensaje.findById(mensajeId);
 
@@ -313,7 +313,7 @@ const removerReaccion = async (req, res = response) => {
 const obtenerUltimoMensaje = async (req, res = response) => {
     try {
         const { usuario1, usuario2 } = req.query;
-        const { uid } = req;
+        const { uid } = req.user;
 
         // Verificar que el usuario autenticado sea uno de los participantes
         if (uid !== usuario1 && uid !== usuario2) {
@@ -345,7 +345,7 @@ const obtenerUltimoMensaje = async (req, res = response) => {
 const buscarMensajes = async (req, res = response) => {
     try {
         const { query, usuario1, usuario2, limite = 20 } = req.query;
-        const { uid } = req;
+        const { uid } = req.user;
 
         // Verificar que el usuario autenticado sea uno de los participantes
         if (uid !== usuario1 && uid !== usuario2) {

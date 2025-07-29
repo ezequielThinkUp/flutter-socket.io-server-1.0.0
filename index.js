@@ -21,7 +21,14 @@ app.use(helmet({
 }));
 
 app.use(cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.181.75:3000",
+        "http://192.168.181.75",
+        "capacitor://localhost",
+        "ionic://localhost"
+    ],
     credentials: true
 }));
 
@@ -47,7 +54,14 @@ const server = http.createServer(app);
 // Socket.io v4 con configuración segura
 const io = socketIo(server, {
     cors: {
-        origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+        origin: [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://192.168.181.75:3000",
+            "http://192.168.181.75",
+            "capacitor://localhost",
+            "ionic://localhost"
+        ],
         methods: ["GET", "POST"],
         credentials: true
     },
