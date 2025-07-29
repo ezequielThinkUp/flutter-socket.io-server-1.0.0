@@ -1,8 +1,9 @@
 // Gestión segura de usuarios conectados
 const usuariosConectados = new Map();
 
-// Importar modelo de Usuario para actualizar base de datos
+// Importar modelos para actualizar base de datos
 const Usuario = require('../models/usuario');
+const Mensaje = require('../models/mensaje');
 
 module.exports = (io) => {
 
@@ -101,7 +102,7 @@ module.exports = (io) => {
         });
 
         // --- MENSAJES PRIVADOS (Para Flutter Chat App) ---
-        socket.on('mensaje-personal', (payload) => {
+        socket.on('mensaje-personal', async (payload) => {
             try {
                 const { para, mensaje, tipo = 'texto' } = payload;
                 const emisor = usuariosConectados.get(socket.id);
@@ -111,11 +112,29 @@ module.exports = (io) => {
                     return;
                 }
 
+                // 🆕 GUARDAR MENSAJE EN BASE DE DATOS
+                let mensajeGuardado;
+                try {
+                    mensajeGuardado = new Mensaje({
+                        contenido: mensaje.trim(),
+                        emisor: emisor.uid,
+                        receptor: para,
+                        tipo: tipo,
+                        estado: 'enviado'
+                    });
+                    await mensajeGuardado.save();
+                    console.log(`💾 Mensaje guardado en BD: ${mensajeGuardado.id}`);
+                } catch (dbError) {
+                    console.warn(`⚠️ Error guardando mensaje en BD:`, dbError.message);
+                    // Continuar sin fallar si hay error de BD
+                }
+
                 // Buscar socket del destinatario
                 const destinatarioEntry = Array.from(usuariosConectados.entries())
                     .find(([socketId, user]) => user.uid === para);
 
                 const mensajeCompleto = {
+                    id: mensajeGuardado?.id || Date.now().toString(),
                     de: emisor.uid,
                     para,
                     mensaje: mensaje.trim(),
@@ -134,6 +153,16 @@ module.exports = (io) => {
                         ...mensajeCompleto,
                         entregado: true
                     });
+
+                    // 🆕 MARCAR COMO ENTREGADO EN BD
+                    if (mensajeGuardado) {
+                        try {
+                            await mensajeGuardado.marcarComoEntregado();
+                            console.log(`✅ Mensaje marcado como entregado: ${mensajeGuardado.id}`);
+                        } catch (dbError) {
+                            console.warn(`⚠️ Error marcando mensaje como entregado:`, dbError.message);
+                        }
+                    }
 
                     console.log(`💌 Mensaje privado: ${emisor.nombre} → ${destinatarioEntry[1].nombre}`);
 
@@ -176,6 +205,43 @@ module.exports = (io) => {
 
             } catch (error) {
                 console.error('❌ Error en indicador escribiendo:', error.message);
+            }
+        });
+
+        // --- MARCAR MENSAJE COMO LEÍDO ---
+        socket.on('marcar-leido', async (data) => {
+            try {
+                const { mensajeId } = data;
+                const usuario = usuariosConectados.get(socket.id);
+
+                if (!usuario) return;
+
+                // 🆕 MARCAR COMO LEÍDO EN BD
+                try {
+                    const mensaje = await Mensaje.findById(mensajeId);
+                    if (mensaje && mensaje.receptor.toString() === usuario.uid) {
+                        await mensaje.marcarComoLeido();
+                        console.log(`👁️ Mensaje marcado como leído: ${mensajeId}`);
+
+                        // Notificar al emisor que su mensaje fue leído
+                        const emisorEntry = Array.from(usuariosConectados.entries())
+                            .find(([socketId, user]) => user.uid === mensaje.emisor.toString());
+
+                        if (emisorEntry) {
+                            const [emisorSocketId] = emisorEntry;
+                            io.to(emisorSocketId).emit('mensaje-leido', {
+                                mensajeId: mensajeId,
+                                leidoPor: usuario.uid,
+                                leidoEn: new Date()
+                            });
+                        }
+                    }
+                } catch (dbError) {
+                    console.warn(`⚠️ Error marcando mensaje como leído:`, dbError.message);
+                }
+
+            } catch (error) {
+                console.error('❌ Error marcando mensaje como leído:', error.message);
             }
         });
 
