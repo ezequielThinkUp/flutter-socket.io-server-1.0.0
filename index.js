@@ -24,8 +24,8 @@ app.use(cors({
     origin: [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "http://192.168.181.75:3000",
-        "http://192.168.181.75",
+        "http://192.168.181.80:3000",
+        "http://192.168.181.80",
         "capacitor://localhost",
         "ionic://localhost"
     ],
@@ -57,8 +57,8 @@ const io = socketIo(server, {
         origin: [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
-            "http://192.168.181.75:3000",
-            "http://192.168.181.75",
+            "http://192.168.181.80:3000",
+            "http://192.168.181.80",
             "capacitor://localhost",
             "ionic://localhost"
         ],
@@ -94,11 +94,11 @@ app.get('/health', (req, res) => {
 // Puerto del servidor
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, (err) => {
+server.listen(PORT, '0.0.0.0', (err) => {
     if (err) throw new Error(err);
 
     console.log('🚀 Servidor Socket.io SEGURO ejecutándose en puerto', PORT);
-    console.log('📡 WebSocket disponible en ws://localhost:' + PORT);
+    console.log('📡 WebSocket disponible en ws://0.0.0.0:' + PORT);
     console.log('💻 Cliente de prueba: http://localhost:' + PORT);
     console.log('🔒 Vulnerabilidades: 0 (Socket.io v4.8.1)');
 });
